@@ -18,6 +18,6 @@ export function MessageCount() {
     }, [])
 
     return (
-        <p className="mt-4 text-2xl font-semibold text-red-500">{count + 503}</p>
+        <p className="mt-4 text-3xl font-semibold text-red-500">{count + 503}</p>
     )
 }

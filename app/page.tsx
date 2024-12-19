@@ -13,36 +13,43 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-400 to-yellow-400 px-4 py-8">
-      <div className="mx-auto max-w-md">
+      <div className="mx-auto max-w-md lg:max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center">
             <Image
               src="/sapo.svg"
               alt="Sapo Logo"
-              width={60}
-              height={60}
+              width={80}
+              height={80}
               className="rounded-full"
               priority
             />
-            <h1 className="text-2xl font-bold text-white">Sapo</h1>
+            <h1 className="text-lg -mt-2 font-bold text-white">Sapo</h1>
           </div>
-          <img src="/ibero-logo.png" alt="Ibero Logo" className="h-8" />
+          <Image
+            src="/ibero.svg"
+            alt="Ibero Logo"
+            width={80}
+            height={80}
+            priority
+          />
         </header>
 
-        <div className="space-y-6">
+        <div className="space-y-6 flex flex-col">
           <div className="text-center">
-            <h2 className="text-4xl font-bold text-white">
-              <span className="text-red-500">Expose</span> your friends,
+            <h2 className="text-3xl font-bold text-white">
+              <span className="bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Expose</span> your friends,
               <br />
               shitty Ex, bad teachers,
               <br />
               hot chicks, whatever.
             </h2>
             <MessageCount />
-            <p className="text-xl text-red-500">Sapos de la Ibero</p>
+            <p className="text-xl bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Sapos de la Ibero</p>
           </div>
 
           <MessageInput />
+          <div className='w-4/5 h-0.5 bg-white bg-opacity-40 !my-12 mx-auto' />
           <MessageFeed />
           <PhoneVerification />
         </div>
