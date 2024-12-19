@@ -14,7 +14,16 @@ interface Message {
 
 export function MessageFeed() {
   const [messages, setMessages] = useState<Message[]>([])
-  const isVerified = localStorage ? localStorage.getItem('isVerified') === 'true' : false
+  const [isVerified, setIsVerified] = useState(false)
+
+  useEffect(() => {
+    if (localStorage) {
+      const isVerified = localStorage.getItem('isVerified')
+      if (isVerified) {
+        setIsVerified(true)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     const q = query(
