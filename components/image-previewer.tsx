@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, ImageIcon } from 'lucide-react';
 import { UploadButton } from '@/utils/uploadthing';
 import { useToast } from '@/hooks/use-toast';
-import { ImageIcon } from 'lucide-react';
 
-const ImageUploadPreview = ({ onImageUpload, onImageRemove, isUploading, setIsUploading }: { onImageUpload: (url: string) => void, onImageRemove: () => void, isUploading: boolean, setIsUploading: (isUploading: boolean) => void }) => {
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+const ImageUploadPreview = ({
+    onImageUpload,
+    onImageRemove,
+    isUploading,
+    setIsUploading
+}: {
+    onImageUpload: (url: string) => void;
+    onImageRemove: () => void;
+    isUploading: boolean;
+    setIsUploading: (value: boolean) => void;
+}) => {
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploadProgress, setUploadProgress] = useState(0);
-    // const [isUploading, setIsUploading] = useState(false);
     const { toast } = useToast();
 
     const handleImageSelection = (file: File) => {
-        // Create local preview immediately
         const localPreviewUrl = URL.createObjectURL(file);
         setPreviewUrl(localPreviewUrl);
         setIsUploading(true);
@@ -20,9 +27,9 @@ const ImageUploadPreview = ({ onImageUpload, onImageRemove, isUploading, setIsUp
     };
 
     return (
-        <div className="relative">
+        <div className="flex items-center">
             {previewUrl ? (
-                <div className="relative w-48 h-48 mt-4">
+                <div className="relative w-48 h-48">
                     <Image
                         src={previewUrl}
                         alt="Preview"
@@ -31,7 +38,6 @@ const ImageUploadPreview = ({ onImageUpload, onImageRemove, isUploading, setIsUp
                         className="rounded-md"
                     />
 
-                    {/* Loading Overlay */}
                     {isUploading && (
                         <div className="absolute inset-0 bg-black bg-opacity-50 rounded-md flex items-center justify-center">
                             <div className="flex flex-col items-center gap-2">
@@ -84,17 +90,16 @@ const ImageUploadPreview = ({ onImageUpload, onImageRemove, isUploading, setIsUp
                         });
                     }}
                     appearance={{
-                        button: "bg-transparent text-[#4AB84A] font-bold rounded-3xl py-0 h-8 w-10",
-                        allowedContent: "hidden z-[-1]",
-                        container: "absolute bottom-1 z-10",
+                        button: "bg-transparent hover:bg-transparent p-0",
+                        allowedContent: "hidden",
+                        container: "relative",
                     }}
                     content={{
-                        button: <button className="">
+                        button:
                             <ImageIcon
-                                stroke="#000"
-                                className="z-[-2] absolute top-0 left-0 translate-x-[50%] translate-y-[30%]"
+                                size={24}
+                                className="text-gray-500 hover:text-gray-700 transition-colors"
                             />
-                        </button>,
                     }}
                 />
             )}

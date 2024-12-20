@@ -43,7 +43,7 @@ export function MessageFeed() {
           className={`p-4 ${index >= 3 ? 'blur-sm hover:blur-md transition-all' : ''}`}
         >
           <div className="flex gap-2">
-            <div className="relative w-4 h-4 my-auto">
+            <div className="relative w-4 h-4 mb-auto">
               <Image
                 src='/cube.svg'
                 width={50}
