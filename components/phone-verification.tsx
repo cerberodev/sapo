@@ -329,6 +329,8 @@ export function PhoneVerification() {
 
   const handleSocialMediaShare = async (platform: string, urlOrHandler: string) => {
     try {
+      const shareText = "Check out this anonymous messaging app! " + window.location.href;
+      await navigator.clipboard.writeText(shareText);
       if (platform === 'Instagram') {
         await handleInstagramShare();
       } else {

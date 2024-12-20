@@ -186,12 +186,13 @@ export default function AdminPage() {
 
     if (activeTab === 'messages') {
       // Headers for messages
-      csvContent = 'Content,User ID,Created At,Image URL\n';
+      csvContent = 'Content,User ID,Created At,Image URL,Day\n';
 
       // Data rows for messages
       const messageRows = filteredMessages.map((message: Message) => {
         const content = message.content.replace(/"/g, '""'); // Escape quotes in content
-        return `"${content}",${message.userId},${message.createdAt},${message.imageUrl || ''}`
+        const messageDay = getMessageDay(new Date(message.createdAt));
+        return `"${content}",${message.userId},${message.createdAt},${message.imageUrl || ''},Day ${messageDay}`
       }).join('\n');
 
       csvContent += messageRows;
