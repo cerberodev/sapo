@@ -6,17 +6,16 @@ import { db } from '@/lib/firebase'
 import { Card } from '@/components/ui/card'
 import { AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
-import { useVerification } from '@/providers/VerifiedContext'
 
 interface Message {
   id: string
   content: string
   createdAt: string
+  imageUrl?: string
 }
 
 export function MessageFeed() {
   const [messages, setMessages] = useState<Message[]>([])
-  const { isVerified, setIsVerified } = useVerification()
 
   useEffect(() => {
     const q = query(
@@ -37,11 +36,11 @@ export function MessageFeed() {
   }, [])
 
   return (
-    <div className="space-y-4 max-h-80 overflow-auto">
+    <div className="space-y-4 max-h-96 overflow-auto relative">
       {messages.map((message, index) => (
         <Card
           key={message.id}
-          className={`p-4 ${index >= 3 && !isVerified ? 'blur-sm hover:blur-md transition-all' : ''}`}
+          className={`p-4 ${index >= 3 ? 'blur-sm hover:blur-md transition-all' : ''}`}
         >
           <div className="flex gap-2">
             <div className="relative w-4 h-4 my-auto">
@@ -60,11 +59,25 @@ export function MessageFeed() {
                 className='absolute w-3 h-3 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
               />
             </div>
-            <p className="text-sm">{message.content}</p>
+            <div className="flex-1">
+              <p className="text-sm text-[#827575]">{message.content}</p>
+              {message.imageUrl && (
+                <div className="mt-2 relative">
+                  <div className="relative w-48 h-48">
+                    <Image
+                      src={message.imageUrl}
+                      alt="Attached image"
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-md"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       ))}
     </div>
   )
 }
-

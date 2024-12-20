@@ -13,9 +13,10 @@ import {
 import { Search } from 'lucide-react'
 import Image from 'next/image'
 import { db } from '@/lib/firebase'
-import { collection, addDoc } from 'firebase/firestore'
-import { Facebook, Twitter, Linkedin, Instagram } from 'lucide-react'
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore'
+import { Facebook, Twitter, Linkedin, Instagram, Copy } from 'lucide-react'
 import { useVerification } from '@/providers/VerifiedContext'
+import { useToast } from '@/hooks/use-toast'
 
 interface Country {
   name: string
@@ -24,6 +25,8 @@ interface Country {
 }
 
 const COUNTRIES: Country[] = [
+  { name: 'Mexico', code: '+52', flag: '/flags/mx.svg' },
+  { name: 'United States', code: '+1', flag: '/flags/us.svg' },
   { name: 'Afghanistan', code: '+93', flag: '/flags/af.svg' },
   { name: 'Albania', code: '+355', flag: '/flags/al.svg' },
   { name: 'Algeria', code: '+213', flag: '/flags/dz.svg' },
@@ -134,7 +137,7 @@ const COUNTRIES: Country[] = [
   { name: 'Marshall Islands', code: '+692', flag: '/flags/mh.svg' },
   { name: 'Mauritania', code: '+222', flag: '/flags/mr.svg' },
   { name: 'Mauritius', code: '+230', flag: '/flags/mu.svg' },
-  { name: 'Mexico', code: '+52', flag: '/flags/mx.svg' },
+
   { name: 'Micronesia', code: '+691', flag: '/flags/fm.svg' },
   { name: 'Moldova', code: '+373', flag: '/flags/md.svg' },
   { name: 'Monaco', code: '+377', flag: '/flags/mc.svg' },
@@ -207,7 +210,7 @@ const COUNTRIES: Country[] = [
   { name: 'Ukraine', code: '+380', flag: '/flags/ua.svg' },
   { name: 'United Arab Emirates', code: '+971', flag: '/flags/ae.svg' },
   { name: 'United Kingdom', code: '+44', flag: '/flags/gb.svg' },
-  { name: 'United States', code: '+1', flag: '/flags/us.svg' },
+
   { name: 'Uruguay', code: '+598', flag: '/flags/uy.svg' },
   { name: 'Uzbekistan', code: '+998', flag: '/flags/uz.svg' },
   { name: 'Vanuatu', code: '+678', flag: '/flags/vu.svg' },
@@ -217,57 +220,13 @@ const COUNTRIES: Country[] = [
   { name: 'Yemen', code: '+967', flag: '/flags/ye.svg' },
   { name: 'Zambia', code: '+260', flag: '/flags/zm.svg' },
   { name: 'Zimbabwe', code: '+263', flag: '/flags/zw.svg' },
-];
-
-const FacebookIcon = ({ className }: { className: string }) => (
-  <div className={className}>
-    <Image
-      src="/icons/fb.png"
-      alt="Facebook Icon"
-      width={24}
-      height={24}
-    />
-  </div>
-)
-
-const TwitterIcon = ({ className }: { className: string }) => (
-  <div className={className}>
-    <Image
-      src="/icons/x.jpg"
-      alt="Twitter Icon"
-      width={24}
-      height={24}
-    />
-  </div>
-)
-
-const LinkedinIcon = ({ className }: { className: string }) => (
-  <div className={className}>
-    <Image
-      src="/icons/linkedin.png"
-      alt="Linkedin Icon"
-      width={24}
-      height={24}
-    />
-  </div>
-)
-
-const InstagramIcon = ({ className }: { className: string }) => (
-  <div className={className}>
-    <Image
-      src="/icons/instagram.png"
-      alt="Instagram Icon"
-      width={24}
-      height={24}
-    />
-  </div>
-)
+]
 
 const SOCIAL_MEDIA = [
-  { name: 'Facebook', icon: FacebookIcon, url: 'https://www.facebook.com/sharer/sharer.php?u=' },
-  { name: 'Twitter', icon: TwitterIcon, url: 'https://twitter.com/intent/tweet?url=' },
-  { name: 'LinkedIn', icon: LinkedinIcon, url: 'https://www.linkedin.com/shareArticle?mini=true&url=' },
-  { name: 'Instagram', icon: InstagramIcon, url: 'https://www.instagram.com/' },
+  { name: 'WhatsApp', icon: '/icons/whatsapp.png', url: 'https://api.whatsapp.com/send?text=' },
+  { name: 'Instagram', icon: '/icons/instagram.png', handler: 'instagram' },
+  { name: 'Facebook', icon: '/icons/fb.png', url: 'https://www.facebook.com/sharer/sharer.php?u=' },
+  { name: 'Snapchat', icon: '/icons/snapchat.png', url: 'https://www.snapchat.com/share?url=' },
 ]
 
 export function PhoneVerification() {
@@ -277,6 +236,8 @@ export function PhoneVerification() {
   const [phone, setPhone] = useState('')
   const [search, setSearch] = useState('')
   const { isVerified, setIsVerified } = useVerification()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const filteredCountries = COUNTRIES.filter(country =>
     country.name.toLowerCase().includes(search.toLowerCase())
@@ -289,31 +250,141 @@ export function PhoneVerification() {
         setIsVerified(true)
       }
     }
-  }, [])
+  }, [setIsVerified])
 
-  const handleShare = async () => {
+  const handleShare = () => {
+    setIsShareDialogOpen(true)
+  }
+
+  const handlePhoneSubmit = async () => {
+    if (!phone.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a phone number",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Basic phone number validation
+    const phoneRegex = /^\d{8,15}$/;
+    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid phone number",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
+      // Check if phone number already exists
+      const formattedPhone = `${selectedCountry.code}${phone.trim()}`;
+      const phoneQuery = query(
+        collection(db, 'waitlist'),
+        where('phoneNumber', '==', formattedPhone)
+      );
+      const existingDocs = await getDocs(phoneQuery);
+
+      if (!existingDocs.empty) {
+        toast({
+          title: "Already registered",
+          description: "This phone number is already on the waiting list",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Add to waitlist collection
+      await addDoc(collection(db, 'waitlist'), {
+        phoneNumber: formattedPhone,
+        countryCode: selectedCountry.code,
+        countryName: selectedCountry.name,
+        timestamp: new Date().toISOString(),
+        rawPhone: phone.trim()
+      });
+
+      // Clear phone input and show success message
+      setPhone('');
+      toast({
+        title: "Success!",
+        description: "You've been added to the waiting list",
+      });
+
+      // Optional: Open share dialog after successful registration
+      handleShare();
+
+    } catch (error) {
+      console.error('Error adding phone number:', error);
+      toast({
+        title: "Error",
+        description: "Failed to join waiting list. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSocialMediaShare = async (platform: string, urlOrHandler: string) => {
+    try {
+      if (platform === 'Instagram') {
+        await handleInstagramShare();
+      } else {
+        await addDoc(collection(db, 'shares'), {
+          platform,
+          timestamp: new Date(),
+        });
+        if (!isVerified) {
+          localStorage.setItem('isVerified', 'true');
+          setIsVerified(true);
+        }
+        window.open(urlOrHandler + encodeURIComponent(window.location.href), '_blank');
+      }
+    } catch (error) {
+      console.error('Error adding share:', error);
+    }
+  };
+
+  const handleInstagramShare = async () => {
+    try {
+      const shareText = "Check out this anonymous messaging app! " + window.location.href;
+      await navigator.clipboard.writeText(shareText);
       await addDoc(collection(db, 'shares'), {
+        platform: 'Instagram',
         timestamp: new Date(),
-        // Add any other relevant data you want to store
+      });
+      if (!isVerified) {
+        localStorage.setItem('isVerified', 'true');
+        setIsVerified(true);
+      }
+      window.open('https://www.instagram.com/', '_blank');
+    } catch (error) {
+      console.error('Error handling Instagram share:', error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      await addDoc(collection(db, 'shares'), {
+        platform: 'Copy Link',
+        timestamp: new Date(),
       })
       if (!isVerified) {
         localStorage.setItem('isVerified', 'true')
         setIsVerified(true)
       }
-      setIsShareDialogOpen(true)
+      // You might want to show a toast or some feedback here
     } catch (error) {
-      console.error('Error adding share:', error)
+      console.error('Error copying link:', error)
     }
-  }
-
-  const handleSocialMediaShare = (url: string) => {
-    window.open(url + encodeURIComponent(window.location.href), '_blank')
   }
 
   return (
     <>
-      <div className='flex flex-col items-center justify-center gap-4 !mt-16'>
+      <div className='flex flex-col items-center justify-center gap-4 !mt-20'>
         <Card className="p-4 text-center max-w-md">
           <h3 className="text-lg font-semibold mb-4">
             Revela los Secretos de la Ibero <br />
@@ -342,8 +413,18 @@ export function PhoneVerification() {
               className='outline-none shadow-none text-sm border-l-[1px] border-r-0 border-y-0 rounded-none border-gray-300'
             />
           </div>
+          <Button
+            onClick={handlePhoneSubmit}
+            disabled={isSubmitting}
+            className="w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8"
+          >
+            {isSubmitting ? 'Joining...' : 'Join Waitlist'}
+          </Button>
         </Card>
-        <Button className="w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8 max-w-md" onClick={handleShare}>
+        <Button
+          className="w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8 max-w-md"
+          onClick={handleShare}
+        >
           Share
         </Button>
       </div>
@@ -401,12 +482,20 @@ export function PhoneVerification() {
                 key={platform.name}
                 variant="outline"
                 className="p-2"
-                onClick={() => handleSocialMediaShare(platform.url)}
+                onClick={() => handleSocialMediaShare(platform.name, platform.url || platform.handler || '')}
               >
-                <platform.icon className="h-6 w-6" />
+                <Image src={platform.icon} alt={platform.name} width={24} height={24} />
                 <span className="sr-only">{platform.name}</span>
               </Button>
             ))}
+            <Button
+              variant="outline"
+              className="p-2"
+              onClick={handleCopyLink}
+            >
+              <Copy className="h-6 w-6" />
+              <span className="sr-only">Copy Link</span>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

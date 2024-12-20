@@ -50,7 +50,14 @@ export default function Home() {
 
           <MessageInput />
           <div className='w-4/5 h-0.5 bg-white bg-opacity-40 !my-12 mx-auto' />
-          <MessageFeed />
+          <div className="space-y-6 relative">
+            <MessageFeed />
+            <div className="flex flex-col items-center justify-center w-20 absolute -bottom-20 left-[38%] lg:left-[43%] h-20 space-y-1">
+              <div className='w-2 h-2 bg-white rounded-full' />
+              <div className='w-2 h-2 bg-white rounded-full' />
+              <div className='w-2 h-2 bg-white rounded-full' />
+            </div>
+          </div>
           <PhoneVerification />
         </div>
       </div>
