@@ -21,6 +21,7 @@ export function MessageInput() {
 	const [messageSent, setMessageSent] = useState(false)
 	const [imageUrl, setImageUrl] = useState<string | null>(null)
 	const [isUploading, setIsUploading] = useState(false)
+	const [sent, setSent] = useState(false)
 	const { toast } = useToast()
 
 	const handleSubmit = async () => {
@@ -41,12 +42,8 @@ export function MessageInput() {
 				imageUrl: imageUrl,
 			})
 
-			window.scrollTo({
-				top: document.documentElement.scrollHeight,
-				behavior: 'smooth'
-			});
-
 			setMessage('')
+			setSent(true)
 			setMessageSent(true)
 			setImageUrl(null)
 			toast({
@@ -79,6 +76,13 @@ export function MessageInput() {
 		} finally {
 			setIsSubmitting(false)
 		}
+	}
+
+	const handleSentButtonClick = () => {
+		window.scrollTo({
+			top: document.documentElement.scrollHeight,
+			behavior: 'smooth'
+		});
 	}
 
 	return (
@@ -134,6 +138,13 @@ export function MessageInput() {
 					disabled={isSubmitting || isUploading}
 					isSubmitting={isSubmitting}
 				/>
+				{sent && (
+					<button className=' w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8 
+                    disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400
+                    transition-transform hover:scale-105 active:scale-95' onClick={handleSentButtonClick}>
+						Join Waiting List
+					</button>
+				)}
 			</div>
 		</>
 	)

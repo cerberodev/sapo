@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { collection, query, orderBy, getDocs, doc, getDoc, where } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, doc, getDoc, where, setDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import Image from 'next/image'
-import { Download, Search } from 'lucide-react'
+import { Download, Search, X } from 'lucide-react'
 import { DayManagement } from '@/components/day-management'
 import { Check } from "lucide-react"
 import {
@@ -28,6 +28,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useToast } from '@/hooks/use-toast'
 
 const dayOptions = [
   { value: "1", label: "Day 1" },
@@ -89,6 +91,11 @@ export default function AdminPage() {
   const [userStats, setUserStats] = useState<UserStats[]>([])
   const [userSortOrder, setUserSortOrder] = useState<'desc' | 'asc'>('desc')
   const [userSearch, setUserSearch] = useState('')
+  const [selectedUser, setSelectedUser] = useState<UserStats | null>(null)
+  const [userMessages, setUserMessages] = useState<Message[]>([])
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [startingCount, setStartingCount] = useState(0)
+  const { toast } = useToast()
   const router = useRouter()
 
   const getMessageDay = (messageDate: Date) => {
@@ -117,6 +124,14 @@ export default function AdminPage() {
 
     return () => unsubscribe()
   }, [router])
+
+  const handleUserClick = async (user: UserStats) => {
+    // Filter messages for the selected user
+    const userMessages = messages.filter(message => message.userId === user.userId)
+    setUserMessages(userMessages)
+    setSelectedUser(user)
+    setIsUserModalOpen(true)
+  }
 
   const fetchData = async () => {
     // Fetch messages
@@ -149,6 +164,12 @@ export default function AdminPage() {
     const avgMessagesPerUser = totalVisitors > 0 ? totalMessages / totalVisitors : 0
 
     const userStatsMap = new Map<string, UserStats>()
+
+    const countQuery = doc(db, 'count', 'imZopcsjVcKLYGCwPE9T')
+    const countSnapshot = await getDoc(countQuery)
+
+    const startingCount = countSnapshot.data()?.count || 0
+    setStartingCount(startingCount)
 
     // Process messages to count per user
     fetchedMessages.forEach(message => {
@@ -334,6 +355,97 @@ export default function AdminPage() {
     URL.revokeObjectURL(url);
   };
 
+  const UserMessagesModal = () => {
+    if (!selectedUser) return null
+
+    return (
+      <Dialog open={isUserModalOpen} onOpenChange={setIsUserModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center">
+              <span>Messages from {selectedUser.phoneNumber || selectedUser.userId}</span>
+              {/* <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsUserModalOpen(false)}
+                className="h-6 w-6 rounded-full"
+              >
+                <X className="h-4 w-4" />
+              </Button> */}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            {userMessages.map((message) => (
+              <Card key={message.id} className="p-4">
+                <div className="flex gap-2">
+                  <div className="relative w-4 h-4 my-auto">
+                    <Image
+                      src='/cube.svg'
+                      width={50}
+                      height={50}
+                      alt='cube'
+                      className='absolute w-4 h-4'
+                    />
+                    <Image
+                      src='/I.svg'
+                      width={50}
+                      height={50}
+                      alt='I'
+                      className='absolute w-3 h-3 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm">{message.content}</p>
+                    {message.imageUrl && (
+                      <div className="mt-2">
+                        <Image
+                          src={message.imageUrl}
+                          alt="Attached image"
+                          width={200}
+                          height={200}
+                          className="rounded-md object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  {new Date(message.createdAt).toLocaleString()}
+                </div>
+              </Card>
+            ))}
+            {userMessages.length === 0 && (
+              <div className="text-center text-gray-500 py-8">
+                No messages found for this user
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  const handleStartingCountUpdate = async () => {
+    try {
+      const countDoc = doc(db, 'count', 'imZopcsjVcKLYGCwPE9T')
+      await setDoc(countDoc, {
+        count: startingCount
+      }, { merge: true })
+
+      toast({
+        title: "Count Updated",
+        description: `Count has been updated successfully.`
+      });
+    } catch (error) {
+      console.error('Error updating count:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update count. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }
+
   if (loading) {
     return <div>Loading...</div>
   }
@@ -359,6 +471,39 @@ export default function AdminPage() {
 
       <div className="mb-8">
         <DayManagement />
+      </div>
+
+      <div className='mb-8'>
+        <div className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Starting Count</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="flex gap-4 items-center">
+                  <p className="font-medium min-w-[80px]">
+                    Starting Count
+                  </p>
+                  <Input
+                    value={startingCount}
+                    onChange={(e) => {
+                      setStartingCount(e.target.value ? parseInt(e.target.value) : 0)
+                    }}
+                    placeholder={`Enter Starting Count`}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleStartingCountUpdate}
+                    variant="outline"
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Tabs defaultValue="messages" className="w-full" onValueChange={(value) => setActiveTab(value)}>
@@ -545,7 +690,11 @@ export default function AdminPage() {
           </div>
 
           {sortedAndFilteredUsers.map((user) => (
-            <Card key={user.userId} className="p-4">
+            <Card
+              key={user.userId}
+              className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => handleUserClick(user)}
+            >
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium">User ID: {user.userId}</p>
@@ -576,6 +725,7 @@ export default function AdminPage() {
           )}
         </TabsContent>
       </Tabs>
+      <UserMessagesModal />
     </div>
   )
 }

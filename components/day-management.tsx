@@ -191,6 +191,11 @@ export function DayManagement() {
                             <div key={theme.day} className="flex gap-4 items-center">
                                 <p className="font-medium min-w-[80px]">
                                     Day {theme.day}
+                                    {currentDay === theme.day && (
+                                        <span className="text-xs">
+                                            {" "}(Current)
+                                        </span>
+                                    )}
                                 </p>
                                 <Input
                                     value={theme.theme}
