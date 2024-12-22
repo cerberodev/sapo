@@ -257,6 +257,8 @@ export function PhoneVerification() {
   }
 
   const handlePhoneSubmit = async () => {
+    const userId = localStorage.getItem('sapo_user_id') ?? '';
+
     if (!phone.trim()) {
       toast({
         title: "Error",
@@ -302,7 +304,8 @@ export function PhoneVerification() {
         countryCode: selectedCountry.code,
         countryName: selectedCountry.name,
         timestamp: new Date().toISOString(),
-        rawPhone: phone.trim()
+        rawPhone: phone.trim(),
+        userId: userId,
       });
 
       // Clear phone input and show success message
@@ -369,6 +372,9 @@ export function PhoneVerification() {
 
   const handleCopyLink = async () => {
     try {
+      toast({
+        title: 'Link Copied Successfully!',
+      })
       await navigator.clipboard.writeText(window.location.href)
       await addDoc(collection(db, 'shares'), {
         platform: 'Copy Link',

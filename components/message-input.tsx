@@ -18,6 +18,7 @@ const CHARACTER_LIMIT = 200;
 export function MessageInput() {
 	const [message, setMessage] = useState('')
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [messageSent, setMessageSent] = useState(false)
 	const [imageUrl, setImageUrl] = useState<string | null>(null)
 	const [isUploading, setIsUploading] = useState(false)
 	const { toast } = useToast()
@@ -40,7 +41,13 @@ export function MessageInput() {
 				imageUrl: imageUrl,
 			})
 
+			window.scrollTo({
+				top: document.documentElement.scrollHeight,
+				behavior: 'smooth'
+			});
+
 			setMessage('')
+			setMessageSent(true)
 			setImageUrl(null)
 			toast({
 				action: (
@@ -103,6 +110,8 @@ export function MessageInput() {
 								}}
 								isUploading={isUploading}
 								setIsUploading={setIsUploading}
+								messageSent={messageSent}
+								setMessageSent={setMessageSent}
 							/>
 
 							<div className="text-sm text-white">
@@ -119,7 +128,7 @@ export function MessageInput() {
 					<span>100% anónimo</span>
 					🔒
 				</div>
-				<CountdownTimer />
+				{/* <CountdownTimer /> */}
 				<ShakeButton
 					onClick={handleSubmit}
 					disabled={isSubmitting || isUploading}

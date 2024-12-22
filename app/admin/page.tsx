@@ -53,6 +53,7 @@ interface WaitlistEntry {
   countryName: string
   timestamp: string
   rawPhone: string
+  userId?: string
 }
 
 interface Stats {
@@ -60,6 +61,14 @@ interface Stats {
   totalVisitors: number
   avgMessagesPerUser: number
   totalShares: number
+}
+
+interface UserStats {
+  userId: string
+  messageCount: number
+  phoneNumber?: string
+  countryName?: string
+  lastActive?: string
 }
 
 export default function AdminPage() {
@@ -77,6 +86,9 @@ export default function AdminPage() {
   const [messageSearch, setMessageSearch] = useState('')
   const [phoneSearch, setPhoneSearch] = useState('')
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [userStats, setUserStats] = useState<UserStats[]>([])
+  const [userSortOrder, setUserSortOrder] = useState<'desc' | 'asc'>('desc')
+  const [userSearch, setUserSearch] = useState('')
   const router = useRouter()
 
   const getMessageDay = (messageDate: Date) => {
@@ -136,6 +148,39 @@ export default function AdminPage() {
     const totalVisitors = uniqueUsers.size
     const avgMessagesPerUser = totalVisitors > 0 ? totalMessages / totalVisitors : 0
 
+    const userStatsMap = new Map<string, UserStats>()
+
+    // Process messages to count per user
+    fetchedMessages.forEach(message => {
+      if (!message.userId) return
+
+      const stats = userStatsMap.get(message.userId) || {
+        userId: message.userId,
+        messageCount: 0,
+        lastActive: message.createdAt
+      }
+
+      stats.messageCount++
+      if (new Date(message.createdAt) > new Date(stats.lastActive!)) {
+        stats.lastActive = message.createdAt
+      }
+
+      userStatsMap.set(message.userId, stats)
+    })
+
+    // Add phone numbers from waitlist
+    fetchedWaitlist.forEach(entry => {
+      if (!entry.userId) return
+
+      const stats = userStatsMap.get(entry.userId)
+      if (stats) {
+        stats.phoneNumber = entry.phoneNumber
+        stats.countryName = entry.countryName
+      }
+    })
+
+    setUserStats(Array.from(userStatsMap.values()))
+
     setStats({
       totalMessages,
       totalVisitors,
@@ -154,6 +199,16 @@ export default function AdminPage() {
     await signOut(auth)
     router.push('/admin/login')
   }
+
+  const sortedAndFilteredUsers = userStats
+    .filter(user =>
+      (userSearch.toLowerCase() ? user.userId.toLowerCase().includes(userSearch.toLowerCase()) : true) ||
+      (userSearch.toLowerCase() ? (user.phoneNumber?.toLowerCase().includes(userSearch.toLowerCase()) ?? false) : true)
+    )
+    .sort((a, b) => {
+      const order = userSortOrder === 'desc' ? -1 : 1
+      return (a.messageCount - b.messageCount) * order
+    })
 
   const filteredMessages = messages.filter(message => {
     const matchesSearch = message.content.toLowerCase().includes(messageSearch.toLowerCase());
@@ -188,19 +243,75 @@ export default function AdminPage() {
       // Headers for messages
       csvContent = 'Content,User ID,Created At,Image URL,Day\n';
 
+      // Create a map of user message counts and phone numbers
+      const userInfo = new Map();
+      messages.forEach(msg => {
+        const info = userInfo.get(msg.userId) || { messageCount: 0, phone: '' };
+        info.messageCount++;
+        userInfo.set(msg.userId, info);
+      });
+
+      // Add phone numbers from waitlist
+      waitlist.forEach(entry => {
+        if (entry.userId) {
+          const info = userInfo.get(entry.userId) || { messageCount: 0, phone: '' };
+          info.phone = entry.phoneNumber;
+          userInfo.set(entry.userId, info);
+        }
+      });
+
       // Data rows for messages
       const messageRows = filteredMessages.map((message: Message) => {
         const content = message.content.replace(/"/g, '""'); // Escape quotes in content
         const messageDay = getMessageDay(new Date(message.createdAt));
+        const userInfoData = userInfo.get(message.userId) || { messageCount: 0, phone: '' };
+
         return `"${content}",${message.userId},${message.createdAt},${message.imageUrl || ''},Day ${messageDay}`
       }).join('\n');
 
       csvContent += messageRows;
+    } else if (activeTab === 'users') {
+      // Headers for users export
+      csvContent = 'User ID,Total Messages,Phone Number,Country,Last Active\n';
+
+      // Create user statistics
+      const userStats = new Map();
+      messages.forEach(msg => {
+        const stats = userStats.get(msg.userId) || {
+          messageCount: 0,
+          phone: '',
+          country: '',
+          lastActive: msg.createdAt
+        };
+        stats.messageCount++;
+        if (new Date(msg.createdAt) > new Date(stats.lastActive)) {
+          stats.lastActive = msg.createdAt;
+        }
+        userStats.set(msg.userId, stats);
+      });
+
+      // Add phone numbers from waitlist
+      waitlist.forEach(entry => {
+        if (entry.userId) {
+          const stats = userStats.get(entry.userId);
+          if (stats) {
+            stats.phone = entry.phoneNumber;
+            stats.country = entry.countryName;
+          }
+        }
+      });
+
+      // Create rows for users export
+      const userRows = Array.from(userStats.entries()).map(([userId, stats]) => {
+        return `${userId},${stats.messageCount},${stats.phone || ''},${stats.country || ''},${stats.lastActive}`
+      }).join('\n');
+
+      csvContent += userRows;
     } else {
-      // Headers for waitlist
+      // Headers for waitlist (unchanged)
       csvContent = 'Phone Number,Country Name,Country Code,Raw Phone,Timestamp\n';
 
-      // Data rows for waitlist
+      // Data rows for waitlist (unchanged)
       const waitlistRows = filteredWaitlist.map((entry: WaitlistEntry) => {
         const countryName = entry.countryName.replace(/,/g, ';'); // Replace commas in country names
         return `${entry.phoneNumber},"${countryName}",${entry.countryCode},${entry.rawPhone},${entry.timestamp}`
@@ -220,7 +331,7 @@ export default function AdminPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url); // Clean up the URL
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -251,9 +362,10 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="messages" className="w-full" onValueChange={(value) => setActiveTab(value)}>
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
 
         <div className="flex justify-between items-center mb-4">
@@ -264,7 +376,7 @@ export default function AdminPage() {
               className="flex items-center gap-2 max-md:max-w-40"
             >
               <Download className="h-4 w-4" />
-              Export {activeTab === 'messages' ? 'Messages' : 'Waitlist'}
+              Export {activeTab === 'messages' ? 'Messages' : activeTab === 'Waitlist' ? 'Waitlist' : 'Users'}
             </Button>
             {activeTab === 'messages' && (
               <Popover>
@@ -403,6 +515,63 @@ export default function AdminPage() {
           {filteredWaitlist.length === 0 && (
             <div className="text-center text-gray-500 py-8">
               No phone numbers found matching your search
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="users" className="space-y-4">
+          <div className="flex justify-between items-center mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search users..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select
+              defaultValue="desc"
+              onValueChange={(value: any) => setUserSortOrder(value as 'desc' | 'asc')}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">Most Messages</SelectItem>
+                <SelectItem value="asc">Least Messages</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {sortedAndFilteredUsers.map((user) => (
+            <Card key={user.userId} className="p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">User ID: {user.userId}</p>
+                  {user.phoneNumber && (
+                    <div className="text-xs text-gray-500">
+                      <p>{user.phoneNumber}</p>
+                      <p>{user.countryName}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-green-600">{user.messageCount}</p>
+                  <p className="text-xs text-gray-500">messages</p>
+                  {user.lastActive && (
+                    <p className="text-xs text-gray-500">
+                      Last active: {new Date(user.lastActive).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {sortedAndFilteredUsers.length === 0 && (
+            <div className="text-center text-gray-500 py-8">
+              No users found matching your search
             </div>
           )}
         </TabsContent>

@@ -4,6 +4,7 @@ import { MessageInput } from '@/components/message-input'
 import { PhoneVerification } from '@/components/phone-verification'
 import Image from 'next/image'
 import { MessageCount } from '@/components/message-count'
+import { ArrowDown } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Sapo - Anonymous Messages',
@@ -17,14 +18,14 @@ export default function Home() {
         <header className="mb-8 flex items-center justify-between">
           <div className="flex flex-col items-center">
             <Image
-              src="/sapo.svg"
+              src="/logo.svg"
               alt="Sapo Logo"
               width={80}
               height={80}
               className="rounded-full"
               priority
             />
-            <h1 className="text-lg -mt-2 font-bold text-white">Sapo</h1>
+            <h1 className="text-2xl -mt-0.5 font-bold text-white">Sapo</h1>
           </div>
           <Image
             src="/ibero.svg"
@@ -49,10 +50,11 @@ export default function Home() {
           </div>
 
           <MessageInput />
-          <div className='w-4/5 h-0.5 bg-white bg-opacity-40 !my-12 mx-auto' />
+          {/* <div className='w-4/5 h-0.5 bg-white bg-opacity-40 !my-12 mx-auto' /> */}
+          <ArrowDown className='my-12 mx-auto animate-bounce' stroke='#fff' size={36} />
           <div className="space-y-6 relative">
             <MessageFeed />
-            <div className="flex flex-col items-center justify-center w-20 absolute -bottom-20 left-[38%] lg:left-[43%] h-20 space-y-1">
+            <div className="flex flex-col items-center justify-center w-20 absolute -bottom-20 left-[38%] lg:left-[44%] h-20 space-y-1">
               <div className='w-2 h-2 bg-white rounded-full' />
               <div className='w-2 h-2 bg-white rounded-full' />
               <div className='w-2 h-2 bg-white rounded-full' />

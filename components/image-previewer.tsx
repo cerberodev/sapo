@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { X, Loader2, ImageIcon } from 'lucide-react';
 import { UploadButton } from '@/utils/uploadthing';
@@ -8,12 +8,16 @@ const ImageUploadPreview = ({
     onImageUpload,
     onImageRemove,
     isUploading,
-    setIsUploading
+    setIsUploading,
+    messageSent,
+    setMessageSent,
 }: {
     onImageUpload: (url: string) => void;
     onImageRemove: () => void;
     isUploading: boolean;
     setIsUploading: (value: boolean) => void;
+    messageSent: boolean;
+    setMessageSent: (value: boolean) => void;
 }) => {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -25,6 +29,13 @@ const ImageUploadPreview = ({
         setIsUploading(true);
         setUploadProgress(0);
     };
+
+    useEffect(() => {
+        if(messageSent) {
+            setPreviewUrl(null)
+            setMessageSent(false)
+        }
+    }, [messageSent])
 
     return (
         <div className="flex items-center">
