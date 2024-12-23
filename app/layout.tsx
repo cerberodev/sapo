@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
     title: 'Sapo - Anonymous Messages',
-    description: 'Share anonymous messages with your friends',
+    description: 'Share anonymous messages exclusively to IBERO.',
 }
 
 
