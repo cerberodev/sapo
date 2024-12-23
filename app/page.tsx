@@ -39,11 +39,11 @@ export default function Home() {
         <div className="space-y-6 flex flex-col">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-white">
-              <span className="bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Expose</span> your friends,
+              <span className="bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Chismea</span> sobre tus amigos,
               <br />
-              shitty Ex, bad teachers,
+              la infiel de tu ex, sobre ese pinche maestro,
               <br />
-              hot chicks, whatever.
+              lo que quieras
             </h2>
             <MessageCount />
             <p className="text-xl bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Sapos de la Ibero</p>
