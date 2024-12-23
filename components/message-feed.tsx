@@ -16,6 +16,7 @@ interface Message {
   imageUrl?: string
   isInitiallyUnblurred?: boolean
   userId: string
+  isSelected?: boolean
 }
 
 export function MessageFeed() {
@@ -23,8 +24,17 @@ export function MessageFeed() {
   const [userMessageCount, setUserMessageCount] = useState(0)
   const [unblurredCount, setUnblurredCount] = useState(4)
   const { userId } = useVerification()
+  const [feedMode, setFeedMode] = useState<'auto' | 'manual'>('auto')
 
   useEffect(() => {
+    // Fetch feed mode
+    const feedModeQuery = query(collection(db, 'settings'), where('id', '==', 'feedMode'))
+    const unsubscribeFeedMode = onSnapshot(feedModeQuery, (snapshot) => {
+      if (!snapshot.empty) {
+        setFeedMode(snapshot.docs[0].data().mode)
+      }
+    })
+
     // Fetch initially unblurred messages (admin-selected)
     const initialUnblurredQuery = query(
       collection(db, 'messages'),
@@ -32,12 +42,22 @@ export function MessageFeed() {
       limit(4)
     )
 
-    // Fetch remaining messages
-    const remainingMessagesQuery = query(
-      collection(db, 'messages'),
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    )
+    let messagesQuery
+    if (feedMode === 'auto') {
+      messagesQuery = query(
+        collection(db, 'messages'),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+      )
+    } else {
+      // In manual mode, fetch selected messages ordered by displayOrder
+      messagesQuery = query(
+        collection(db, 'messages'),
+        where('isSelected', '==', true),
+        orderBy('displayOrder', 'asc'),
+        limit(20)
+      )
+    }
 
     // Query to track user's messages
     const userMessagesQuery = query(
@@ -58,7 +78,7 @@ export function MessageFeed() {
       setMessages([...initialMessages, ...remainingMessages])
     })
 
-    const unsubscribeRemaining = onSnapshot(remainingMessagesQuery, (snapshot) => {
+    const unsubscribeRemaining = onSnapshot(messagesQuery, (snapshot) => {
       remainingMessages = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -75,7 +95,6 @@ export function MessageFeed() {
     const unsubscribeUserMessages = onSnapshot(userMessagesQuery, (snapshot) => {
       const count = snapshot.docs.length && userId ? snapshot.docs.length : 0
       setUserMessageCount(count)
-      console.log(userId, count)
       // Unblur 4 messages for each message sent (including initial 4)
       setUnblurredCount(Math.min(4 + (count * 4), 20))
     })
@@ -85,8 +104,9 @@ export function MessageFeed() {
       unsubscribeInitial()
       unsubscribeRemaining()
       unsubscribeUserMessages()
+      unsubscribeFeedMode()
     }
-  }, [userId])
+  }, [userId, feedMode])
 
   // Calculate remaining messages that can be unlocked
   const remainingToUnlock = Math.max(0, messages.length - unblurredCount)

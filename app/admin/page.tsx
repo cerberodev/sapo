@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { collection, query, orderBy, getDocs, doc, getDoc, where, setDoc, deleteDoc } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, doc, getDoc, where, setDoc, deleteDoc, updateDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import Image from 'next/image'
 import { Download, Search, X } from 'lucide-react'
 import { DayManagement } from '@/components/day-management'
+import { Switch } from "@/components/ui/switch"
 import { Check } from "lucide-react"
 import {
   Command,
@@ -46,6 +47,8 @@ interface Message {
   createdAt: string
   userId: string
   imageUrl?: string
+  isSelected?: boolean
+  displayOrder?: number
 }
 
 interface WaitlistEntry {
@@ -96,6 +99,7 @@ export default function AdminPage() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
   const [clearDataOpen, setClearDataOpen] = useState(false)
   const [startingCount, setStartingCount] = useState(0)
+  const [feedMode, setFeedMode] = useState<'auto' | 'manual'>('auto')
   const { toast } = useToast()
   const router = useRouter()
 
@@ -135,11 +139,123 @@ export default function AdminPage() {
     }
   };
 
+  const handleFeedModeChange = async (mode: 'auto' | 'manual') => {
+    try {
+      const settingsRef = doc(db, 'settings', 'feedMode')
+      await setDoc(settingsRef, { id: 'feedMode', mode }, { merge: true })
+      setFeedMode(mode)
+      toast({
+        title: "Feed Mode Updated",
+        description: `Feed mode has been set to ${mode}.`
+      })
+    } catch (error) {
+      console.error('Error updating feed mode:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update feed mode.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleMessageSelection = async (messageId: string, isSelected: boolean) => {
+    try {
+      const messageRef = doc(db, 'messages', messageId)
+
+      if (isSelected) {
+        // Count currently selected messages
+        const selectedMessagesQuery = query(
+          collection(db, 'messages'),
+          where('isSelected', '==', true)
+        )
+        const selectedSnapshot = await getDocs(selectedMessagesQuery)
+
+        if (selectedSnapshot.size >= 20 && isSelected) {
+          toast({
+            title: "Limit Reached",
+            description: "You can only select up to 20 messages.",
+            variant: "destructive"
+          })
+          return
+        }
+
+        // Get the highest current order
+        const highestOrderMessage = selectedSnapshot.docs
+          .map(doc => ({ ...doc.data(), id: doc.id }))
+          .reduce((max, msg) =>
+            ((msg as Message)?.displayOrder || 0) > (max || 0) ? ((msg as Message).displayOrder || 0) : max
+            , 0)
+
+        // Set new message as last in order
+        setMessages(messages.map(message =>
+          message.id === messageId
+            ? { ...message, isSelected, displayOrder: (highestOrderMessage || 0) + 1 }
+            : message
+        ))
+
+        await updateDoc(messageRef, {
+          isSelected,
+          displayOrder: (highestOrderMessage || 0) + 1
+        })
+      } else {
+        // If unselecting, remove order and update other messages' orders
+        const oldMessage = messages.find(m => m.id === messageId)
+        const oldOrder = oldMessage?.displayOrder || 0
+
+        // Update orders of all messages after this one
+        const updatePromises = messages
+          .filter(m => m.isSelected && m.displayOrder && m.displayOrder > oldOrder)
+          .map(m => {
+            const newOrder = (m.displayOrder || 0) - 1
+            return updateDoc(doc(db, 'messages', m.id), { displayOrder: newOrder })
+          })
+
+        setMessages(messages.map(message => {
+          if (message.id === messageId) {
+            return { ...message, isSelected: false, displayOrder: undefined }
+          }
+          if (message.displayOrder && message.displayOrder > oldOrder) {
+            return { ...message, displayOrder: message.displayOrder - 1 }
+          }
+          return message
+        }))
+
+        await Promise.all([
+          updateDoc(messageRef, {
+            isSelected: false,
+            displayOrder: null
+          }),
+          ...updatePromises
+        ])
+      }
+
+      toast({
+        title: isSelected ? "Message Selected" : "Message Unselected",
+        description: isSelected ? "Message added to feed" : "Message removed from feed"
+      })
+    } catch (error) {
+      console.error('Error updating message selection:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update message selection.",
+        variant: "destructive"
+      })
+    }
+  }
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user && user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
         setLoading(false)
         fetchData()
+        // Fetch feed mode
+        const getFeedMode = async () => {
+          const settingsDoc = await getDoc(doc(db, 'settings', 'feedMode'))
+          if (settingsDoc.exists()) {
+            setFeedMode(settingsDoc.data().mode)
+          }
+        }
+        getFeedMode()
       } else {
         router.push('/admin/login')
       }
@@ -268,6 +384,48 @@ export default function AdminPage() {
     entry.rawPhone.toLowerCase().includes(phoneSearch.toLowerCase()) ||
     entry.countryCode.toLowerCase().includes(phoneSearch.toLowerCase())
   )
+
+  const moveMessage = async (messageId: string, direction: 'up' | 'down') => {
+    try {
+      const currentMessage = messages.find(m => m.id === messageId)
+      if (!currentMessage?.displayOrder) return
+
+      const currentOrder = currentMessage.displayOrder
+      const newOrder = direction === 'up' ? currentOrder - 1 : currentOrder + 1
+
+      const otherMessage = messages.find(m => m.displayOrder === newOrder && m.isSelected)
+      if (!otherMessage) return
+
+      // Update both messages
+      await Promise.all([
+        updateDoc(doc(db, 'messages', messageId), {
+          displayOrder: newOrder
+        }),
+        updateDoc(doc(db, 'messages', otherMessage.id), {
+          displayOrder: currentOrder
+        })
+      ])
+
+      // Update local state
+      setMessages(messages.map(message => {
+        if (message.id === messageId) {
+          return { ...message, displayOrder: newOrder }
+        }
+        if (message.id === otherMessage.id) {
+          return { ...message, displayOrder: currentOrder }
+        }
+        return message
+      }))
+
+    } catch (error) {
+      console.error('Error reordering messages:', error)
+      toast({
+        title: "Error",
+        description: "Failed to reorder messages.",
+        variant: "destructive"
+      })
+    }
+  }
 
   const StatCard = ({ title, value }: { title: string, value: number | string }) => (
     <Card className="flex flex-col items-center justify-center p-1 h-24 gap-2">
@@ -530,6 +688,31 @@ export default function AdminPage() {
         </div>
       </div>
 
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">Feed Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium">Feed Mode</p>
+              <p className="text-sm text-gray-500">
+                Choose between automatic (most recent 20) or manually selected messages
+              </p>
+            </div>
+            <Select value={feedMode} onValueChange={handleFeedModeChange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select feed mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Automatic</SelectItem>
+                <SelectItem value="manual">Manual Selection</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="messages" className="w-full" onValueChange={(value) => setActiveTab(value)}>
         <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="messages">Messages</TabsTrigger>
@@ -625,7 +808,7 @@ export default function AdminPage() {
           {filteredMessages.map((message) => (
             <Card key={message.id} className="p-4">
               <div className="flex gap-2">
-                <div className="relative w-4 h-4 my-auto">
+                <div className="relative w-4 h-4 mb-auto">
                   <Image
                     src='/cube.svg'
                     width={50}
@@ -655,6 +838,40 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+                {feedMode === 'manual' && (
+                  <div className="flex items-center space-x-2">
+                    <div className="flex flex-col space-y-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveMessage(message.id, 'up')}
+                        disabled={!message.isSelected || message.displayOrder === 1}
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveMessage(message.id, 'down')}
+                        disabled={!message.isSelected || message.displayOrder === 20}
+                      >
+                        ↓
+                      </Button>
+                    </div>
+                    <Switch
+                      checked={message.isSelected}
+                      onCheckedChange={(checked) => handleMessageSelection(message.id, checked)}
+                    />
+                    {message.isSelected && (
+                      <span className="text-sm text-gray-500">
+                        {message.displayOrder}
+                      </span>
+                    )}
+                    <span className="text-sm text-gray-500">
+                      {message.isSelected ? 'Selected' : 'Not Selected'}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="mt-2 text-xs text-gray-500">
                 {new Date(message.createdAt).toLocaleString()}
