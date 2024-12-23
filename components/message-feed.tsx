@@ -97,7 +97,7 @@ export function MessageFeed() {
         <Alert className="bg-gradient-to-r from-purple-500 to-pink-500 border-none text-white mb-4 animate-pulse">
           <Sparkles className="h-4 w-4" />
           <AlertDescription className="font-medium">
-            ¡Envía un mensaje para descubrir {Math.min(4, remainingToUnlock)} mensajes misteriosos más! ✨
+            ¡Envía un Sapo para descubrir {Math.min(4, remainingToUnlock)} Sapos más! ✨
           </AlertDescription>
         </Alert>
       )}

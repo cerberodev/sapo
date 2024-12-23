@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { collection, query, orderBy, getDocs, doc, getDoc, where, setDoc } from 'firebase/firestore'
+import { collection, query, orderBy, getDocs, doc, getDoc, where, setDoc, deleteDoc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -94,10 +94,33 @@ export default function AdminPage() {
   const [selectedUser, setSelectedUser] = useState<UserStats | null>(null)
   const [userMessages, setUserMessages] = useState<Message[]>([])
   const [isUserModalOpen, setIsUserModalOpen] = useState(false)
+  const [clearDataOpen, setClearDataOpen] = useState(false)
   const [startingCount, setStartingCount] = useState(0)
   const { toast } = useToast()
   const router = useRouter()
 
+  const handleClearData = async () => {
+    const sharesQuery = collection(db, 'shares')
+    const sharesData = await getDocs(sharesQuery)
+
+    await Promise.all(
+      [
+        Promise.all(sharesData.docs.map(async (share) => {
+          await deleteDoc(doc(db, 'shares', share.id))
+        })),
+        Promise.all(messages.map(async (message) => {
+          await deleteDoc(doc(db, 'messages', message.id))
+        })),
+        Promise.all(waitlist.map(async (waitlist) => {
+          await deleteDoc(doc(db, 'waitlist', waitlist.id))
+        })),
+      ]
+    )
+    toast({
+      title: "Data Cleared",
+      description: "All data has been cleared successfully."
+    });
+  }
   const getMessageDay = (messageDate: Date) => {
     const mexicoTime = new Date(messageDate.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
     const hours = mexicoTime.getHours();
@@ -459,6 +482,7 @@ export default function AdminPage() {
         <CardContent>
           <p className="mb-4">Welcome to the admin dashboard. Here you can view stats and manage messages.</p>
           <Button onClick={handleLogout}>Logout</Button>
+          <Button variant='destructive' onClick={() => setClearDataOpen(true)} className='ml-2'>Clear Data</Button>
         </CardContent>
       </Card>
 
@@ -726,6 +750,20 @@ export default function AdminPage() {
         </TabsContent>
       </Tabs>
       <UserMessagesModal />
+      <Dialog open={clearDataOpen} onOpenChange={setClearDataOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear Data</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p>Are you sure you want to clear all data?</p>
+            <div className="flex justify-end">
+              <Button onClick={handleClearData} variant="destructive">Clear Data</Button>
+              <Button onClick={() => setClearDataOpen(false)} className="ml-2">Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
