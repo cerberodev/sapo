@@ -332,7 +332,7 @@ export function PhoneVerification() {
 
   const handleSocialMediaShare = async (platform: string, urlOrHandler: string) => {
     try {
-      const shareText = "Check out this anonymous messaging app! " + window.location.href;
+      const shareText = "Chismea mensajes anónimos a toda la IBERO " + window.location.href;
       await navigator.clipboard.writeText(shareText);
       if (platform === 'Instagram') {
         await handleInstagramShare();
@@ -354,7 +354,7 @@ export function PhoneVerification() {
 
   const handleInstagramShare = async () => {
     try {
-      const shareText = "Check out this anonymous messaging app! " + window.location.href;
+      const shareText = "Chismea mensajes anónimos a toda la IBERO " + window.location.href;
       await navigator.clipboard.writeText(shareText);
       await addDoc(collection(db, 'shares'), {
         platform: 'Instagram',
