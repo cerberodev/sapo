@@ -12,6 +12,7 @@ import { DynamicTheme } from '@/components/dynamic-theme'
 import ImageUploadPreview from './image-previewer'
 import ShakeButton from './shake-button'
 import { CountdownTimer } from './countdown-timer'
+import { useVerification } from '@/providers/VerifiedContext'
 
 const CHARACTER_LIMIT = 200;
 
@@ -22,6 +23,7 @@ export function MessageInput() {
 	const [imageUrl, setImageUrl] = useState<string | null>(null)
 	const [isUploading, setIsUploading] = useState(false)
 	const [sent, setSent] = useState(false)
+	const { userId, setUserId } = useVerification()
 	const { toast } = useToast()
 
 	const handleSubmit = async () => {
@@ -29,15 +31,16 @@ export function MessageInput() {
 
 		setIsSubmitting(true)
 		try {
-			let userId = localStorage.getItem('sapo_user_id')
-			if (!userId) {
-				userId = crypto.randomUUID()
-				localStorage.setItem('sapo_user_id', userId)
+			let newUserId = userId
+			if (!newUserId) {
+				newUserId = crypto.randomUUID()
+				localStorage.setItem('sapo_user_id', newUserId)
+				setUserId(newUserId)
 			}
 
 			await addDoc(collection(db, 'messages'), {
 				content: message,
-				userId,
+				userId: newUserId,
 				createdAt: new Date().toISOString(),
 				imageUrl: imageUrl,
 			})

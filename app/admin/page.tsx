@@ -262,7 +262,7 @@ export default function AdminPage() {
 
     if (activeTab === 'messages') {
       // Headers for messages
-      csvContent = 'Content,User ID,Created At,Image URL,Day\n';
+      csvContent = 'Content,User ID,Created At,Image URL,Day,Phone Number\n';
 
       // Create a map of user message counts and phone numbers
       const userInfo = new Map();
@@ -287,7 +287,7 @@ export default function AdminPage() {
         const messageDay = getMessageDay(new Date(message.createdAt));
         const userInfoData = userInfo.get(message.userId) || { messageCount: 0, phone: '' };
 
-        return `"${content}",${message.userId},${message.createdAt},${message.imageUrl || ''},Day ${messageDay}`
+        return `"${content}",${message.userId},${message.createdAt},${message.imageUrl || ''},Day ${messageDay},${userInfoData.phone || ''}`
       }).join('\n');
 
       csvContent += messageRows;

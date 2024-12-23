@@ -5,6 +5,8 @@ import React, { createContext, useState, useContext, useEffect } from 'react'
 interface VerificationContextType {
     isVerified: boolean
     setIsVerified: (value: boolean) => void
+    userId: string
+    setUserId: (value: string) => void
 }
 
 const VerificationContext = createContext<VerificationContextType | undefined>(undefined)
@@ -19,6 +21,16 @@ export const useVerification = () => {
 
 export const VerificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isVerified, setIsVerified] = useState(false)
+    const [userId, setUserId] = useState('')
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const storedUserId = localStorage.getItem('sapo_user_id')
+            if (storedUserId) {
+                setUserId(storedUserId)
+            }
+        }
+    }, [])
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -37,7 +49,7 @@ export const VerificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     return (
-        <VerificationContext.Provider value={{ isVerified, setIsVerified: updateVerification }}>
+        <VerificationContext.Provider value={{ isVerified, setIsVerified: updateVerification, userId, setUserId }}>
             {children}
         </VerificationContext.Provider>
     )

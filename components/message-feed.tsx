@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Sparkles } from 'lucide-react'
 import Image from 'next/image'
+import { useVerification } from '@/providers/VerifiedContext'
 
 interface Message {
   id: string
@@ -21,10 +22,9 @@ export function MessageFeed() {
   const [messages, setMessages] = useState<Message[]>([])
   const [userMessageCount, setUserMessageCount] = useState(0)
   const [unblurredCount, setUnblurredCount] = useState(4)
-  
+  const { userId } = useVerification()
+
   useEffect(() => {
-    const userId = localStorage.getItem('sapo_user_id') ?? ''
-    
     // Fetch initially unblurred messages (admin-selected)
     const initialUnblurredQuery = query(
       collection(db, 'messages'),
@@ -54,7 +54,7 @@ export function MessageFeed() {
         id: doc.id,
         ...doc.data(),
       })) as Message[]
-      
+
       setMessages([...initialMessages, ...remainingMessages])
     })
 
@@ -64,17 +64,18 @@ export function MessageFeed() {
         ...doc.data(),
       })) as Message[]
 
-      remainingMessages = remainingMessages.filter(message => 
+      remainingMessages = remainingMessages.filter(message =>
         !initialMessages.some(m => m.id === message.id)
       )
-      
+
       setMessages([...initialMessages, ...remainingMessages])
     })
 
     // Listen to user's messages count
     const unsubscribeUserMessages = onSnapshot(userMessagesQuery, (snapshot) => {
-      const count = snapshot.docs.length
+      const count = snapshot.docs.length && userId ? snapshot.docs.length : 0
       setUserMessageCount(count)
+      console.log(userId, count)
       // Unblur 4 messages for each message sent (including initial 4)
       setUnblurredCount(Math.min(4 + (count * 4), 20))
     })
@@ -85,7 +86,7 @@ export function MessageFeed() {
       unsubscribeRemaining()
       unsubscribeUserMessages()
     }
-  }, [])
+  }, [userId])
 
   // Calculate remaining messages that can be unlocked
   const remainingToUnlock = Math.max(0, messages.length - unblurredCount)
@@ -100,7 +101,7 @@ export function MessageFeed() {
           </AlertDescription>
         </Alert>
       )}
-      
+
       <div className="max-h-96 overflow-auto space-y-4">
         {messages.map((message, index) => (
           <Card
