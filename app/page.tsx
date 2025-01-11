@@ -26,9 +26,10 @@ export default function Home() {
               priority
             />
             <h1 className="text-2xl -mt-0.5 font-bold text-white">Sapo</h1>
+            <h1 className="text-xs italic -mt-0.5 font-normal text-white">Pre-launch</h1>
           </div>
           <Image
-            src="/ibero.svg"
+            src="/ibero.png"
             alt="Ibero Logo"
             width={80}
             height={80}
