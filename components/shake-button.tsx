@@ -27,7 +27,7 @@ const ShakeButton = ({ onClick, disabled, isSubmitting }: { onClick: () => void,
                 onClick={onClick}
                 disabled={disabled}
                 className={`
-                    w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8 
+                    w-full bg-[#4AB84A] text-white font-bold rounded-3xl py-0 h-8 
                     disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400
                     transition-transform hover:scale-105 active:scale-95 hover:animate-shake
                     ${isShaking ? 'animate-shake' : ''}

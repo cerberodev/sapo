@@ -91,11 +91,11 @@ export function MessageInput() {
 	return (
 		<>
 			<Card className="bg-transparent border-none shadow-none">
-				<div className="flex items-center shadow-none justify-between p-2 px-3 bg-white rounded-t-xl rounded-b-none w-full">
+				<div className="flex items-center shadow-none justify-between p-2 px-3 bg-[#4CB648] rounded-t-xl rounded-b-none w-full">
 					<DynamicTheme />
 				</div>
 
-				<div className="bg-white bg-opacity-20 shadow-xl rounded-b-xl rounded-t-none backdrop-blur-sm px-3 relative">
+				<div className="bg-[#F6F4F4] bg-opacity-20 shadow-xl rounded-b-xl rounded-t-none backdrop-blur-sm px-3 relative">
 					<div className="flex flex-col">
 						<Textarea
 							placeholder="Envía mensajes anónimos a toda la Ibero"
@@ -130,7 +130,7 @@ export function MessageInput() {
 			</Card>
 
 			<div className="flex flex-col items-center justify-between !mt-2 gap-6">
-				<div className="flex items-center gap-1 text-sm text-white font-bold">
+				<div className="flex items-center gap-1 text-sm text-black font-bold">
 					🔒
 					<span>100% anónimo</span>
 					🔒
@@ -142,7 +142,7 @@ export function MessageInput() {
 					isSubmitting={isSubmitting}
 				/>
 				{sent && (
-					<button className=' w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8 
+					<button className=' w-full bg-[#4AB84A] text-white font-bold rounded-3xl py-0 h-8 
                     disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400
                     transition-transform hover:scale-105 active:scale-95' onClick={handleSentButtonClick}>
 						Join Waiting List

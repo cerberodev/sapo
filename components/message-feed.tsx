@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { collection, query, orderBy, onSnapshot, limit, where } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Card } from '@/components/ui/card'
@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { useVerification } from '@/providers/VerifiedContext'
+import { MessageActions } from '@/components/message-actions'
+import { useSearchParams } from 'next/navigation'
 
 interface Message {
   id: string
@@ -17,6 +19,8 @@ interface Message {
   isInitiallyUnblurred?: boolean
   userId: string
   isSelected?: boolean
+  initialVotes: number
+  initialShares: number
 }
 
 export function MessageFeed() {
@@ -25,9 +29,32 @@ export function MessageFeed() {
   const [unblurredCount, setUnblurredCount] = useState(4)
   const { userId } = useVerification()
   const [feedMode, setFeedMode] = useState<'auto' | 'manual'>('auto')
+  const searchParams = useSearchParams()
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement }>({})
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    // Fetch feed mode
+    // Handle scrolling to shared message if message ID is in URL
+    const sharedMessageId = searchParams.get('message')
+    if (sharedMessageId && messageRefs.current[sharedMessageId] && !scrolled) {
+      setTimeout(() => {
+        messageRefs.current[sharedMessageId]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        })
+        // Add a highlight animation class
+        messageRefs.current[sharedMessageId]?.classList.add('highlight-message')
+        // Remove the highlight after animation
+        setTimeout(() => {
+          messageRefs.current[sharedMessageId]?.classList.remove('highlight-message')
+          setScrolled(true)
+        }, 2000)
+      }, 500) // Small delay to ensure content is loaded
+    }
+  }, [searchParams, messages])
+
+  useEffect(() => {
+    // Your existing Firebase listeners...
     const feedModeQuery = query(collection(db, 'settings'), where('id', '==', 'feedMode'))
     const unsubscribeFeedMode = onSnapshot(feedModeQuery, (snapshot) => {
       if (!snapshot.empty) {
@@ -35,7 +62,6 @@ export function MessageFeed() {
       }
     })
 
-    // Fetch initially unblurred messages (admin-selected)
     const initialUnblurredQuery = query(
       collection(db, 'messages'),
       where('isInitiallyUnblurred', '==', true),
@@ -50,7 +76,6 @@ export function MessageFeed() {
         limit(20)
       )
     } else {
-      // In manual mode, fetch selected messages ordered by displayOrder
       messagesQuery = query(
         collection(db, 'messages'),
         where('isSelected', '==', true),
@@ -59,7 +84,6 @@ export function MessageFeed() {
       )
     }
 
-    // Query to track user's messages
     const userMessagesQuery = query(
       collection(db, 'messages'),
       where('userId', '==', userId),
@@ -91,15 +115,12 @@ export function MessageFeed() {
       setMessages([...initialMessages, ...remainingMessages])
     })
 
-    // Listen to user's messages count
     const unsubscribeUserMessages = onSnapshot(userMessagesQuery, (snapshot) => {
       const count = snapshot.docs.length && userId ? snapshot.docs.length : 0
       setUserMessageCount(count)
-      // Unblur 4 messages for each message sent (including initial 4)
       setUnblurredCount(Math.min(4 + (count * 4), 20))
     })
 
-    // Cleanup function to unsubscribe from all listeners
     return () => {
       unsubscribeInitial()
       unsubscribeRemaining()
@@ -108,7 +129,6 @@ export function MessageFeed() {
     }
   }, [userId, feedMode])
 
-  // Calculate remaining messages that can be unlocked
   const remainingToUnlock = Math.max(0, messages.length - unblurredCount)
 
   return (
@@ -126,6 +146,9 @@ export function MessageFeed() {
         {messages.map((message, index) => (
           <Card
             key={message.id}
+            ref={el => {
+              if (el) messageRefs.current[message.id] = el
+            }}
             className={`p-4 ${index >= unblurredCount ? 'blur-sm hover:blur-md transition-all' : ''}`}
           >
             <div className="flex gap-2">
@@ -160,6 +183,11 @@ export function MessageFeed() {
                     </div>
                   </div>
                 )}
+                <MessageActions
+                  messageId={message.id}
+                  initialVotes={message.initialVotes || 0}
+                  initialShares={message.initialShares || 0}
+                />
               </div>
             </div>
           </Card>

@@ -29,6 +29,11 @@ export const VerificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             if (storedUserId) {
                 setUserId(storedUserId)
             }
+            else {
+                const newUserId = crypto.randomUUID()
+                localStorage.setItem('sapo_user_id', newUserId)
+                setUserId(newUserId)
+            }
         }
     }, [])
 

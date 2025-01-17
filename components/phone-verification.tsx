@@ -424,13 +424,13 @@ export function PhoneVerification() {
           <Button
             onClick={handlePhoneSubmit}
             disabled={isSubmitting}
-            className="w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8"
+            className="w-full bg-[#4AB84A] text-white font-bold rounded-3xl py-0 h-8"
           >
             {isSubmitting ? 'Joining...' : 'Join Waitlist'}
           </Button>
         </Card>
         <Button
-          className="w-full bg-white text-[#4AB84A] font-bold rounded-3xl py-0 h-8 max-w-md"
+          className="w-full bg-[#4AB84A] text-white font-bold rounded-3xl py-0 h-8 max-w-md"
           onClick={handleShare}
         >
           Share

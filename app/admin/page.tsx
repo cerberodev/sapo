@@ -31,6 +31,8 @@ import {
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 
 const dayOptions = [
   { value: "1", label: "Day 1" },
@@ -49,6 +51,8 @@ interface Message {
   imageUrl?: string
   isSelected?: boolean
   displayOrder?: number
+  initialVotes: number
+  initialShares: number
 }
 
 interface WaitlistEntry {
@@ -100,6 +104,8 @@ export default function AdminPage() {
   const [clearDataOpen, setClearDataOpen] = useState(false)
   const [startingCount, setStartingCount] = useState(0)
   const [feedMode, setFeedMode] = useState<'auto' | 'manual'>('auto')
+  const [selectedMessages, setSelectedMessages] = useState<string[]>([])
+  const [editingMessage, setEditingMessage] = useState<string | null>(null)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -627,6 +633,84 @@ export default function AdminPage() {
     }
   }
 
+  const handleMessageMetricsUpdate = async (messageId: string, initialVotes: number, initialShares: number) => {
+    try {
+      const messageRef = doc(db, 'messages', messageId)
+      await updateDoc(messageRef, {
+        initialVotes,
+        initialShares
+      })
+
+      setMessages(messages.map(message =>
+        message.id === messageId
+          ? { ...message, initialVotes, initialShares }
+          : message
+      ))
+
+      setEditingMessage(null)
+      toast({
+        title: "Message Updated",
+        description: "Starting metrics have been updated successfully."
+      })
+    } catch (error) {
+      console.error('Error updating message metrics:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update message metrics.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedMessages.length === 0) return
+
+    try {
+      await Promise.all(
+        selectedMessages.map(messageId =>
+          deleteDoc(doc(db, 'messages', messageId))
+        )
+      )
+
+      setMessages(messages.filter(message => !selectedMessages.includes(message.id)))
+      setSelectedMessages([])
+
+      toast({
+        title: "Messages Deleted",
+        description: `Successfully deleted ${selectedMessages.length} messages.`
+      })
+    } catch (error) {
+      console.error('Error deleting messages:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete messages.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const BulkActions = () => {
+    if (selectedMessages.length === 0) return null
+
+    return (
+      <div className="flex items-center justify-between bg-gray-100 p-4 rounded-lg mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">
+            {selectedMessages.length} messages selected
+          </span>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={handleBulkDelete}
+          className="flex items-center gap-2"
+        >
+          Delete Selected
+        </Button>
+      </div>
+    )
+  }
+
   if (loading) {
     return <div>Loading...</div>
   }
@@ -805,9 +889,21 @@ export default function AdminPage() {
         </div>
 
         <TabsContent value="messages" className="space-y-4">
+          <BulkActions />
           {filteredMessages.map((message) => (
             <Card key={message.id} className="p-4">
               <div className="flex gap-2">
+                <Checkbox
+                  checked={selectedMessages.includes(message.id)}
+                  onCheckedChange={(checked) => {
+                    setSelectedMessages(prev =>
+                      checked
+                        ? [...prev, message.id]
+                        : prev.filter(id => id !== message.id)
+                    )
+                  }}
+                  className="mt-1"
+                />
                 <div className="relative w-4 h-4 mb-auto">
                   <Image
                     src='/cube.svg'
@@ -837,6 +933,69 @@ export default function AdminPage() {
                       />
                     </div>
                   )}
+                  <div className="mt-4 space-y-2">
+                    {editingMessage === message.id ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="initialVotes">Starting Votes:</Label>
+                          <Input
+                            id="initialVotes"
+                            type="number"
+                            defaultValue={message.initialVotes || 0}
+                            className="w-24"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="initialShares">Starting Shares:</Label>
+                          <Input
+                            id="initialShares"
+                            type="number"
+                            defaultValue={message.initialShares || 0}
+                            className="w-24"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const votesInput = document.getElementById('initialVotes') as HTMLInputElement
+                              const sharesInput = document.getElementById('initialShares') as HTMLInputElement
+                              handleMessageMetricsUpdate(
+                                message.id,
+                                parseInt(votesInput.value) || 0,
+                                parseInt(sharesInput.value) || 0
+                              )
+                            }}
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingMessage(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-4">
+                        <div className="text-sm">
+                          Starting Votes: {message.initialVotes || 0}
+                        </div>
+                        <div className="text-sm">
+                          Starting Shares: {message.initialShares || 0}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingMessage(message.id)}
+                        >
+                          Edit Metrics
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {feedMode === 'manual' && (
                   <div className="flex items-center space-x-2">

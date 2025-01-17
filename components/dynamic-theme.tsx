@@ -40,7 +40,7 @@ export function DynamicTheme() {
     }, []);
 
     return (
-        <p className='font-semibold'>
+        <p className='font-semibold text-white'>
             {theme || `Expose lo más Whitexican de la Ibero`}
         </p>
     );

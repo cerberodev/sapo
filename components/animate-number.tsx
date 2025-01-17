@@ -39,7 +39,7 @@ export default function AnimatedNumber({ endValue = 100, duration = 1000 }: Anim
     }, [endValue, duration]);
 
     return (
-        <p className="mt-4 text-3xl font-semibold text-red-500">{count.toString()}</p>
+        <p className="mt-4 text-3xl font-bold text-[#4CB648]">{count.toString()}</p>
     );
 };
 

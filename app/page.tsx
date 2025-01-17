@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-green-400 to-yellow-400 px-4 py-8">
+    <main className="min-h-screen bg-white px-4 py-8">
       <div className="mx-auto max-w-md lg:max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
           <div className="flex flex-col items-center">
@@ -25,8 +25,8 @@ export default function Home() {
               className="rounded-full"
               priority
             />
-            <h1 className="text-2xl -mt-0.5 font-bold text-white">Sapo</h1>
-            <h1 className="text-xs italic -mt-0.5 font-normal text-white">Pre-launch</h1>
+            <h1 className="text-2xl -mt-0.5 font-bold text-[#4CB648]">Sapo</h1>
+            <h1 className="text-xs italic -mt-0.5 font-normal text-[#4CB648]">Pre-launch</h1>
           </div>
           <Image
             src="/ibero.png"
@@ -39,15 +39,8 @@ export default function Home() {
 
         <div className="space-y-6 flex flex-col">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">
-              <span className="bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Chismea</span> sobre tus amigos,
-              <br />
-              la infiel de tu ex, sobre ese pinche maestro,
-              <br />
-              lo que quieras
-            </h2>
             <MessageCount />
-            <p className="text-xl bg-gradient-to-r from-[#CD3656] to-[#FF6E76] text-transparent bg-clip-text">Sapos de la Ibero</p>
+            <p className="text-2xl font-semibold text-[#4CB648] bg-clip-text">Sapos de la Ibero</p>
           </div>
 
           <MessageInput />
