@@ -5,6 +5,7 @@ import { PhoneVerification } from '@/components/phone-verification'
 import Image from 'next/image'
 import { MessageCount } from '@/components/message-count'
 import { ArrowDown } from 'lucide-react'
+import { Suspense } from 'react'
 
 export const metadata: Metadata = {
   title: 'Sapo - Anonymous Messages',
@@ -47,7 +48,9 @@ export default function Home() {
           {/* <div className='w-4/5 h-0.5 bg-white bg-opacity-40 !my-12 mx-auto' /> */}
           <ArrowDown className='my-12 mx-auto animate-bounce' stroke='#fff' size={36} />
           <div className="space-y-6 relative">
-            <MessageFeed />
+            <Suspense>
+              <MessageFeed />
+            </Suspense>
             <div className="flex flex-col items-center justify-center w-20 absolute -bottom-20 left-[38%] lg:left-[44%] h-20 space-y-1">
               <div className='w-2 h-2 bg-white rounded-full' />
               <div className='w-2 h-2 bg-white rounded-full' />
