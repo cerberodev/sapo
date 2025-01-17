@@ -39,7 +39,7 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 flex flex-col">
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-0.5">
             <MessageCount />
             <p className="text-2xl font-semibold text-[#4CB648] bg-clip-text">Sapos de la Ibero</p>
           </div>
