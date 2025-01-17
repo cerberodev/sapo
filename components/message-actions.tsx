@@ -161,7 +161,7 @@ export function MessageActions({ messageId, initialVotes, initialShares }: Messa
                     <ArrowUp strokeWidth={2.5} stroke={userVote === 'upvote' ? '#fff' : '#29322C'} className="h-3.5 w-3.5" />
                 </button>
 
-                <span className={cn("text-sm font-medium", userVote === 'upvote' ? 'text-[#45A33D]' : userVote === 'downvote' ? 'text-[#ED1515]' : 'text-gray-500')}>{totalVotes}</span>
+                <span className={cn("text-sm font-medium", totalVotes < 0 ? 'text-[#ED1515]' : userVote === 'upvote' ? 'text-[#45A33D]' : userVote === 'downvote' ? 'text-[#ED1515]' : 'text-gray-500')}>{totalVotes}</span>
 
                 <button
                     onClick={() => handleVote('downvote')}

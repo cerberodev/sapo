@@ -396,7 +396,7 @@ export function PhoneVerification() {
         <Card className="p-4 text-center max-w-md">
           <h3 className="text-lg font-semibold mb-4">
             Revela los Secretos de la Ibero <br />
-            Join Waiting List....
+            Join Waiting List....App coming soon
           </h3>
           <div className="flex gap-2 mb-4 rounded-3xl shadow-lg p-1 border border-gray-100">
             <Button

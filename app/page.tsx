@@ -16,7 +16,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white px-4 py-8">
       <div className="mx-auto max-w-md lg:max-w-2xl">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-4 flex items-center justify-between">
           {/* <Image
             src="/ibero.png"
             alt="Ibero Logo"
@@ -39,7 +39,7 @@ export default function Home() {
         </header>
 
         <div className="space-y-6 flex flex-col">
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <MessageCount />
             <p className="text-2xl font-semibold text-[#4CB648] bg-clip-text">Sapos de la Ibero</p>
           </div>
