@@ -17,25 +17,25 @@ export default function Home() {
     <main className="min-h-screen bg-white px-4 py-8">
       <div className="mx-auto max-w-md lg:max-w-2xl">
         <header className="mb-8 flex items-center justify-between">
-          <div className="flex flex-col items-center">
-            <Image
-              src="/logo.svg"
-              alt="Sapo Logo"
-              width={80}
-              height={80}
-              className="rounded-full"
-              priority
-            />
-            <h1 className="text-2xl -mt-0.5 font-bold text-[#4CB648]">Sapo</h1>
-            <h1 className="text-xs italic -mt-0.5 font-normal text-[#4CB648]">Pre-launch</h1>
-          </div>
-          <Image
+          {/* <Image
             src="/ibero.png"
             alt="Ibero Logo"
             width={80}
             height={80}
             priority
-          />
+          /> */}
+          <h1 className="text-xl font-bold text-black">Ibero cdmx</h1>
+          <div className="flex flex-col items-center">
+            <Image
+              src="/logo-new.svg"
+              alt="Sapo Logo"
+              width={44}
+              height={37}
+              priority
+            />
+            {/* <h1 className="text-2xl -mt-0.5 font-bold text-[#4CB648]">Sapo</h1>
+            <h1 className="text-xs italic -mt-0.5 font-normal text-[#4CB648]">Pre-launch</h1> */}
+          </div>
         </header>
 
         <div className="space-y-6 flex flex-col">

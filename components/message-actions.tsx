@@ -1,10 +1,11 @@
-import { ArrowBigUp, ArrowBigDown, Share2, ArrowUpCircle, ArrowDownCircle } from 'lucide-react'
+import { ArrowBigUp, ArrowBigDown, Share2, ArrowUpCircle, ArrowDownCircle, ArrowUp, ArrowDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { collection, doc, setDoc, query, where, getDocs, onSnapshot, deleteDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useVerification } from '@/providers/VerifiedContext'
 import Image from 'next/image'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
 
 interface MessageActionsProps {
     messageId: string
@@ -151,23 +152,23 @@ export function MessageActions({ messageId, initialVotes, initialShares }: Messa
                 </div>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 w-[83px]">
                 <button
                     onClick={() => handleVote('upvote')}
-                    className={`transition-colors ${userVote === 'upvote' ? 'text-green-500' : 'text-gray-500 hover:text-gray-700'
+                    className={`transition-colors p-1 border-2 border-[#29322C] rounded-full ${userVote === 'upvote' ? 'border-[#45A33D] bg-[#45A33D]' : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
-                    <ArrowUpCircle className="h-6 w-6" />
+                    <ArrowUp strokeWidth={2.5} stroke={userVote === 'upvote' ? '#fff' : '#29322C'} className="h-3.5 w-3.5" />
                 </button>
 
-                <span className="text-sm font-medium">{totalVotes}</span>
+                <span className={cn("text-sm font-medium", userVote === 'upvote' ? 'text-[#45A33D]' : userVote === 'downvote' ? 'text-[#ED1515]' : 'text-gray-500')}>{totalVotes}</span>
 
                 <button
                     onClick={() => handleVote('downvote')}
-                    className={`transition-colors ${userVote === 'downvote' ? 'text-red-500' : 'text-gray-500 hover:text-gray-700'
+                    className={`transition-colors p-1 border-2 border-[#29322C] rounded-full ${userVote === 'downvote' ? 'border-[#ED1515] bg-[#ED1515]' : 'text-gray-500 hover:text-gray-700'
                         }`}
                 >
-                    <ArrowDownCircle className="h-6 w-6" />
+                    <ArrowDown strokeWidth={2.5} stroke={userVote === 'downvote' ? '#fff' : '#29322C'} className="h-3.5 w-3.5" />
                 </button>
             </div>
         </div>

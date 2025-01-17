@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { addDoc, collection } from 'firebase/firestore'
+import { addDoc, collection, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,11 +38,19 @@ export function MessageInput() {
 				setUserId(newUserId)
 			}
 
-			await addDoc(collection(db, 'messages'), {
+			const messageDoc = await addDoc(collection(db, 'messages'), {
 				content: message,
 				userId: newUserId,
 				createdAt: new Date().toISOString(),
 				imageUrl: imageUrl,
+			})
+
+			const voteRef = doc(db, 'votes', `${userId}_${messageDoc.id}`)
+			await setDoc(voteRef, {
+				userId,
+				messageId: messageDoc.id,
+				voteType: 'upvote',
+				timestamp: new Date()
 			})
 
 			setMessage('')

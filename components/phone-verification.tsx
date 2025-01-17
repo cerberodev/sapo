@@ -392,7 +392,7 @@ export function PhoneVerification() {
 
   return (
     <>
-      <div className='flex flex-col items-center justify-center gap-4 !mt-20'>
+      <div className='flex flex-col items-center justify-center gap-12 !mt-20'>
         <Card className="p-4 text-center max-w-md">
           <h3 className="text-lg font-semibold mb-4">
             Revela los Secretos de la Ibero <br />
