@@ -2,13 +2,9 @@
 
 import { useAnalytics } from '@/hooks/use-analytics';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 
-export function AnalyticsProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AnalyticsTracker() {
   const { trackEvent } = useAnalytics();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -22,5 +18,20 @@ export function AnalyticsProvider({
     });
   }, [pathname, searchParams, trackEvent]);
 
-  return <>{children}</>;
+  return null;
+}
+
+export function AnalyticsProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
+      {children}
+    </>
+  );
 }
