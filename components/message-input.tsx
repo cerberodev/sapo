@@ -30,7 +30,7 @@ export function MessageInput() {
 
 	// Rate limiting
 	const [lastMessageTime, setLastMessageTime] = useState<number>(0)
-	const RATE_LIMIT_WINDOW = 10000 // 10 seconds
+	const RATE_LIMIT_WINDOW = 3000 // 3 seconds
 	const MAX_MESSAGES_PER_WINDOW = 2
 
 	useEffect(() => {
