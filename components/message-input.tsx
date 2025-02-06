@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { addDoc, collection, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
+import { useAnalytics } from '@/hooks/use-analytics'
 import { Card } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ export function MessageInput() {
 	const [sent, setSent] = useState(false)
 	const { userId, setUserId } = useVerification()
 	const { toast } = useToast()
+	const { trackEvent } = useAnalytics()
 
 	const handleSubmit = async () => {
 		if (!message.trim() || message.length > CHARACTER_LIMIT) return
@@ -53,6 +55,12 @@ export function MessageInput() {
 				timestamp: new Date()
 			})
 
+			// Track successful message submission
+			trackEvent('message_submitted', {
+				has_image: !!imageUrl,
+				message_length: message.length,
+			})
+
 			setMessage('')
 			setSent(true)
 			setMessageSent(true)
@@ -77,8 +85,11 @@ export function MessageInput() {
 					borderRadius: '1rem',
 				}
 			})
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error sending message:', error)
+			trackEvent('message_error', {
+				error_type: error?.message || 'Unknown error'
+			})
 			toast({
 				title: "Error sending message",
 				description: "Please try again later.",
