@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { addDoc, collection, doc, setDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAnalytics } from '@/hooks/use-analytics'
@@ -28,11 +28,49 @@ export function MessageInput() {
 	const { toast } = useToast()
 	const { trackEvent } = useAnalytics()
 
+	// Rate limiting
+	const [lastMessageTime, setLastMessageTime] = useState<number>(0)
+	const RATE_LIMIT_WINDOW = 10000 // 10 seconds
+	const MAX_MESSAGES_PER_WINDOW = 2
+
+	useEffect(() => {
+		// Load last message time from localStorage
+		const storedTime = localStorage.getItem('last_message_time')
+		if (storedTime) {
+			setLastMessageTime(parseInt(storedTime))
+		}
+	}, [])
+
 	const handleSubmit = async () => {
 		if (!message.trim() || message.length > CHARACTER_LIMIT) return
 
 		setIsSubmitting(true)
 		try {
+
+			// Verificar rate limiting
+			const now = Date.now()
+			const messageCount = parseInt(localStorage.getItem('message_count') || '0')
+			const timeElapsed = now - lastMessageTime
+
+			if (timeElapsed < RATE_LIMIT_WINDOW && messageCount >= MAX_MESSAGES_PER_WINDOW) {
+				const waitTime = Math.ceil((RATE_LIMIT_WINDOW - timeElapsed) / 1000)
+				toast({
+					title: "Espera un momento",
+					description: `Puedes enviar otro mensaje en ${waitTime} segundos`,
+					variant: "destructive",
+				})
+				return
+			}
+
+			// Update rate limiting data
+			if (timeElapsed >= RATE_LIMIT_WINDOW) {
+				localStorage.setItem('message_count', '1')
+			} else {
+				localStorage.setItem('message_count', (messageCount + 1).toString())
+			}
+			localStorage.setItem('last_message_time', now.toString())
+			setLastMessageTime(now)
+
 			let newUserId = userId
 			if (!newUserId) {
 				newUserId = crypto.randomUUID()
