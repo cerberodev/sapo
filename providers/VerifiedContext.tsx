@@ -1,5 +1,6 @@
 'use client'
 
+import { v4 as uuidv4 } from 'uuid';
 import React, { createContext, useState, useContext, useEffect } from 'react'
 
 interface VerificationContextType {
@@ -30,7 +31,7 @@ export const VerificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                 setUserId(storedUserId)
             }
             else {
-                const newUserId = crypto.randomUUID()
+                const newUserId = uuidv4();
                 localStorage.setItem('sapo_user_id', newUserId)
                 setUserId(newUserId)
             }
