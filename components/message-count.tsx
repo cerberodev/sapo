@@ -37,7 +37,7 @@ export function MessageCount() {
         fetchCount()
     }, [])
 
-    if (isLoading || isStartingCountLoading) {
+    if (isLoading) {
         return <></>
     }
     return <AnimatedNumber endValue={count + startingCount} duration={ANIMATION_DURATION_MS} />
