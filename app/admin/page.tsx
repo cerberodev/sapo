@@ -131,6 +131,7 @@ export default function AdminPage() {
       description: "All data has been cleared successfully."
     });
   }
+  
   const getMessageDay = (messageDate: Date) => {
     const mexicoTime = new Date(messageDate.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
     const hours = mexicoTime.getHours();
